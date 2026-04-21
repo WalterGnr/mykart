@@ -56,7 +56,6 @@ class VirusProjectile extends ExtendedObject3D
             if (otherObject instanceof Racer)
             {
                 // TODO: make other racer get hurt
-
                 scene.third.destroy(self)
                 scene.third.physics.destroy(self);      
             }
@@ -87,8 +86,11 @@ export class SpeedBoost extends PowerUps {
         this.activateSpeedBoost(user);
     }
 
-    activateSpeedBoost(user, multiplier = 2.5, duration = 1000) {
-        user.currSpeed = this.originalSpeed * multiplier;
-        setTimeout(() => { user.currSpeed = this.originalSpeed; }, duration);
+    activateSpeedBoost(user, multiplier = 1.5, decayRate = 0.3)
+    {
+        // Adds to the racer's powerupBoostSpeed so it stacks with
+        // any active drift boost instead of overwriting currSpeed.
+        const boostAmount = user.maxSpeed * multiplier;
+        user.applyPowerupBoost(boostAmount, decayRate);
     }
 }

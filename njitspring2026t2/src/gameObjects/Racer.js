@@ -43,6 +43,9 @@ export default class Racer extends ExtendedObject3D
         this.driftBoostSpeed = 0;
         this.driftBoostDecay = 0.4;
 
+        this.powerupBoostSpeed = 0;
+        this.powerupBoostDecay = 0.5;
+
         this.visualPivot = new THREE.Object3D();
         this.add(this.visualPivot);
         this.driftTiltTarget = 0;   
@@ -249,14 +252,24 @@ export default class Racer extends ExtendedObject3D
 
     applyDriftBoost(direction)
     {
-        if (this.driftBoostSpeed <= 0) return;
+        if (this.driftBoostSpeed <= 0 && this.powerupBoostSpeed <= 0) return;
 
-        this.currSpeed = this.maxSpeed + this.driftBoostSpeed;
-        this.driftBoostSpeed = Math.max(0, this.driftBoostSpeed - this.driftBoostDecay);
+        // Both boosts stack on top of maxSpeed
+        this.currSpeed = this.maxSpeed + this.driftBoostSpeed + this.powerupBoostSpeed;
+
+        this.driftBoostSpeed  = Math.max(0, this.driftBoostSpeed  - this.driftBoostDecay);
+        this.powerupBoostSpeed = Math.max(0, this.powerupBoostSpeed - this.powerupBoostDecay);
 
         const x = Math.sin(direction) * this.currSpeed;
         const z = Math.cos(direction) * this.currSpeed;
         this.body.setVelocity(x, this.body.velocity.y, z);
+    }
+
+    applyPowerupBoost(boostAmount, decayRate = 0.5)
+    {
+        // Stacks on top of any existing powerup boost
+        this.powerupBoostSpeed += boostAmount;
+        this.powerupBoostDecay = decayRate;
     }
 
     getDriftTier()
