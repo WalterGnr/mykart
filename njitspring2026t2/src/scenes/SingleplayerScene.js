@@ -24,7 +24,7 @@ export default class SingleplayerScene extends RaceScene {
         
         this.clientPlayer = new Player(this, this.currentTrack.getRandomSpawnTransform(), "PLAYER", this.selectedCharacter);
         
-        const aiAmount = 0
+        const aiAmount = 4
         this.createAIRacers(aiAmount)
 
         this.currentAudio = this.currentTrack.startBGM();

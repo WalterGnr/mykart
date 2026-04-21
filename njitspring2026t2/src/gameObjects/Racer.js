@@ -48,7 +48,12 @@ export default class Racer extends ExtendedObject3D
         this.driftTiltTarget = 0;   
         this.driftTiltMax = 0.35;   
         this.driftTiltSpeed = 0.08; 
-        
+
+        // Visual hop on drift start
+        this.hopTimer = 0;          // counts up while hop is playing
+        this.hopDuration = 150;     // frames the hop lasts 
+        this.hopHeight = 0.6;       // how high the kart visually jumps 
+
         this.driftIndicatorLeft  = this._makeDriftSprite(-0.8);
         this.driftIndicatorRight = this._makeDriftSprite( 0.8);
         this.visualPivot.add(this.driftIndicatorLeft);
@@ -84,15 +89,6 @@ export default class Racer extends ExtendedObject3D
 
         this.checkpointsCrossed = []
         this.lapsCompleted = 0
-
-        // this.add.text(640,300, key, {
-        //         fontFamily: 'Arial',
-        //         fontSize: '30px',
-        //         color: '#ffffff',
-        //         align: 'center',
-        //         fixedWidth: 300,
-        //         backgroundColor: '#2d2d2d00'
-        // }).setPadding(5).setOrigin(0.5);
     }
    
     //get track mesh data
@@ -134,7 +130,7 @@ export default class Racer extends ExtendedObject3D
 
             if(currY < targetY - 0.3){
                 const sinkAmount = targetY - currY;
-                totalForce += Math.min(260, sinkAmount * 190 * speedFactor);
+                totalForce += Math.min(260, sinkAmount * 90 * speedFactor);
 
                 if(this.body.velocity.y < -5){
                     this.body.setVelocity(
@@ -150,12 +146,10 @@ export default class Racer extends ExtendedObject3D
         } else {
             //gravity 
             this.body.applyForce(0, -30, 0);
-
         }
 
-
         if (Math.abs(this.body.velocity.y) > 25) {
-            this.body.setVelocity(this.body.velocity.x, Math.sign(this.body.velocity.y) *25, this.body.velocity.z);
+            this.body.setVelocity(this.body.velocity.x, Math.sign(this.body.velocity.y) * 25, this.body.velocity.z);
         }
     }
 
@@ -184,9 +178,22 @@ export default class Racer extends ExtendedObject3D
         });
     }
 
+    _updateHop()
+    {
+        if (this.hopTimer <= 0) {
+            this.visualPivot.position.y = 0;
+            return;
+        }
+        const t = this.hopTimer / this.hopDuration;
+        this.visualPivot.position.y = Math.sin(t * Math.PI) * this.hopHeight;
+        this.hopTimer++;
+        if (this.hopTimer > this.hopDuration) this.hopTimer = 0;
+    }
+
     updateVisualTilt() //drifting rotation kart
     {
         this.visualPivot.rotation.y += (this.driftTiltTarget - this.visualPivot.rotation.y) * this.driftTiltSpeed;
+        this._updateHop();
     }
 
     startDrift(direction, turnSide)
@@ -196,6 +203,7 @@ export default class Racer extends ExtendedObject3D
         this.driftDir = (turnSide === 'left') ? 1 : -1;
         this.driftCharge = 0;
         this.driftTiltTarget = this.driftDir * this.driftTiltMax;
+        this.hopTimer = 1; // kick off the hop
     }
 
     updateDrift(direction, steerSide)
@@ -213,7 +221,6 @@ export default class Racer extends ExtendedObject3D
 
         this.body.setAngularVelocityY(this.driftDir * rotSpeed);
 
-        
         const driftBlend = 0.18; 
         const targetX = Math.sin(direction) * this.currSpeed;
         const targetZ = Math.cos(direction) * this.currSpeed;
@@ -224,7 +231,6 @@ export default class Racer extends ExtendedObject3D
         this.stickToTrack();
         this.updateVisualTilt();
     }
-
 
     endDrift()
     {
@@ -241,11 +247,9 @@ export default class Racer extends ExtendedObject3D
         this.driftTiltTarget = 0; 
     }
 
-
     applyDriftBoost(direction)
     {
         if (this.driftBoostSpeed <= 0) return;
-
 
         this.currSpeed = this.maxSpeed + this.driftBoostSpeed;
         this.driftBoostSpeed = Math.max(0, this.driftBoostSpeed - this.driftBoostDecay);
@@ -272,14 +276,12 @@ export default class Racer extends ExtendedObject3D
                 this.currSpeed = this.maxSpeed;
             }
         }
-        //console.log(direction)
         
         const x = Math.sin(direction) * this.currSpeed;
         const y = this.body.velocity.y;
         const z = Math.cos(direction) * this.currSpeed;
         this.body.setVelocity(x, y, z);
         this.stickToTrack();
-        
     }
 
     moveBackward(direction) {
@@ -331,13 +333,12 @@ export default class Racer extends ExtendedObject3D
             const y = this.body.velocity.y;
             const z = Math.cos(direction) * this.currSpeed;
 
-            this.body.setVelocity(x,y, z);
+            this.body.setVelocity(x, y, z);
         } else {
             this.body.setVelocity(0, this.body.velocity.y, 0);
         }
 
         this.body.setAngularVelocityY(0);
-        
         this.stickToTrack();
     }
 
@@ -352,142 +353,142 @@ export default class Racer extends ExtendedObject3D
             const loader = new OBJLoader();
             const textureLoader = new THREE.TextureLoader();
 
-        loader.load(model,
-            (object) => {
-                const texture = textureLoader.load(textureImage);
+            loader.load(model,
+                (object) => {
+                    const texture = textureLoader.load(textureImage);
 
-                object.traverse((child) => {
-                    if(child.isMesh) {
-                        child.material = new THREE.MeshStandardMaterial({
-                            map: texture
-                        });
+                    object.traverse((child) => {
+                        if(child.isMesh) {
+                            child.material = new THREE.MeshStandardMaterial({
+                                map: texture
+                            });
+                        }
+                    });
+
+                    this.visualPivot.add(object);
+
+                    this.eye1 = this.raceScene.createSprite(
+                        this.visualPivot,
+                        `/assets/models/textures/shermaldlefteye.png`,
+                        eyePosition,
+                        eyeSize
+                    );
+                    this.eye2 = this.raceScene.createSprite(
+                        this.visualPivot,
+                        `/assets/models/textures/shermaldrighteye.png`,
+                        new THREE.Vector3(-1 * eyePosition.x, eyePosition.y, eyePosition.z),
+                        new THREE.Vector2(eyeSize.x, eyeSize.y)
+                    );
+                    this.eye2.scale.x *= -1;
+
+                    if (this.eye1.material)
+                    {
+                        this.eye1.material.transparent = true;
+                        this.eye2.material.transparent = true;
                     }
-                });
-
-                this.visualPivot.add(object);
-
-                this.eye1 = this.raceScene.createSprite(
-                    this.visualPivot,
-                    `/assets/models/textures/shermaldlefteye.png`,
-                    eyePosition,
-                    eyeSize
-                );
-                this.eye2 = this.raceScene.createSprite(
-                    this.visualPivot,
-                    `/assets/models/textures/shermaldrighteye.png`,
-                    new THREE.Vector3(-1 * eyePosition.x, eyePosition.y, eyePosition.z),
-                    new THREE.Vector2(eyeSize.x, eyeSize.y)
-                );
-                this.eye2.scale.x *= -1;
-
-                if (this.eye1.material)
-                {
-                    this.eye1.material.transparent = true;
-                    this.eye2.material.transparent = true;
-                }
-                if (this.eye2.material)
-                {
-                    this.eye1.material.opacity = 1;
-                    this.eye2.material.opacity = 1;
-                }
-
-                this.counter = 0;
-            }
-        );
-        }
-        else{
-        let eyePosition;
-        let eyeSize;
-        let verticalOffset = 0;
-
-        if(character == "shermie")
-        {
-            eyePosition = new THREE.Vector3(-0.11, 1.35, 0.44);
-            eyeSize = new THREE.Vector2(0.4,0.4);
-            verticalOffset = 0.5;
-            eyePosition.y -= verticalOffset
-        }
-        else if(character == "shermald")
-        {
-            eyePosition = new THREE.Vector3(-0.11, 1.7, 0.44);
-            eyeSize = new THREE.Vector2(0.3,0.3);
-            verticalOffset = 0.7;
-            eyePosition.y -= verticalOffset
-        }
-        else if(character == "virrel")
-        {
-            eyePosition = new THREE.Vector3(-0.11, 1.3, 0.44);
-            eyeSize = new THREE.Vector2(0.3,0.3);
-            verticalOffset = 0.5;
-            eyePosition.y -= verticalOffset
-        }
-        else if(character == "r04ch")
-        {
-            eyePosition = new THREE.Vector3(-0.11, 0.1, 1);
-            eyeSize = new THREE.Vector2(0.3,0.3);
-            verticalOffset = 0.5;
-            eyePosition.y -= verticalOffset
-        }
-        else
-        {
-            eyePosition = new THREE.Vector3(-0.11, 3, 0.44);
-            eyeSize = new THREE.Vector2(0.5,0.5);
-            verticalOffset = 1;
-            eyePosition.y -= verticalOffset
-        }
-
-        const model = `/assets/models/obj/${character}.obj`
-        const textureImage = `/assets/models/textures/${character}.png`
-        const eyeImage = `/assets/models/textures/${character}eye.png`
-        const loader = new OBJLoader();
-        const textureLoader = new THREE.TextureLoader();
-
-        loader.load(model,
-            (object) => {
-                const texture = textureLoader.load(textureImage);
-
-                object.traverse((child) => {
-                    if(child.isMesh) {
-                        child.material = new THREE.MeshStandardMaterial({
-                            map: texture
-                        });
+                    if (this.eye2.material)
+                    {
+                        this.eye1.material.opacity = 1;
+                        this.eye2.material.opacity = 1;
                     }
-                });
 
-                object.position.y -= verticalOffset
-
-                this.visualPivot.add(object);
-
-                this.eye1 = this.raceScene.createSprite(
-                    this.visualPivot,
-                    eyeImage,
-                    eyePosition,
-                    eyeSize
-                );
-
-                this.eye2 = this.raceScene.createSprite(
-                    this.visualPivot,
-                    eyeImage,
-                    new THREE.Vector3(-1 * eyePosition.x, eyePosition.y, eyePosition.z),
-                    new THREE.Vector2(eyeSize.x, eyeSize.y)
-                );
-                this.eye2.scale.x *= -1;
-
-                if (this.eye1.material)
-                {
-                    this.eye1.material.transparent = true;
-                    this.eye2.material.transparent = true;
+                    this.counter = 0;
                 }
-                if (this.eye2.material)
-                {
-                    this.eye1.material.opacity = 1;
-                    this.eye2.material.opacity = 1;
-                }
+            );
+        }
+        else {
+            let eyePosition;
+            let eyeSize;
+            let verticalOffset = 0;
 
-                this.counter = 0;
+            if(character == "shermie")
+            {
+                eyePosition = new THREE.Vector3(-0.11, 1.35, 0.44);
+                eyeSize = new THREE.Vector2(0.4,0.4);
+                verticalOffset = 0.5;
+                eyePosition.y -= verticalOffset
             }
-        );
-    }
+            else if(character == "shermald")
+            {
+                eyePosition = new THREE.Vector3(-0.11, 1.7, 0.44);
+                eyeSize = new THREE.Vector2(0.3,0.3);
+                verticalOffset = 0.7;
+                eyePosition.y -= verticalOffset
+            }
+            else if(character == "virrel")
+            {
+                eyePosition = new THREE.Vector3(-0.11, 1.3, 0.44);
+                eyeSize = new THREE.Vector2(0.3,0.3);
+                verticalOffset = 0.5;
+                eyePosition.y -= verticalOffset
+            }
+            else if(character == "r04ch")
+            {
+                eyePosition = new THREE.Vector3(-0.11, 0.1, 1);
+                eyeSize = new THREE.Vector2(0.3,0.3);
+                verticalOffset = 0.5;
+                eyePosition.y -= verticalOffset
+            }
+            else
+            {
+                eyePosition = new THREE.Vector3(-0.11, 3, 0.44);
+                eyeSize = new THREE.Vector2(0.5,0.5);
+                verticalOffset = 1;
+                eyePosition.y -= verticalOffset
+            }
+
+            const model = `/assets/models/obj/${character}.obj`
+            const textureImage = `/assets/models/textures/${character}.png`
+            const eyeImage = `/assets/models/textures/${character}eye.png`
+            const loader = new OBJLoader();
+            const textureLoader = new THREE.TextureLoader();
+
+            loader.load(model,
+                (object) => {
+                    const texture = textureLoader.load(textureImage);
+
+                    object.traverse((child) => {
+                        if(child.isMesh) {
+                            child.material = new THREE.MeshStandardMaterial({
+                                map: texture
+                            });
+                        }
+                    });
+
+                    object.position.y -= verticalOffset
+
+                    this.visualPivot.add(object);
+
+                    this.eye1 = this.raceScene.createSprite(
+                        this.visualPivot,
+                        eyeImage,
+                        eyePosition,
+                        eyeSize
+                    );
+
+                    this.eye2 = this.raceScene.createSprite(
+                        this.visualPivot,
+                        eyeImage,
+                        new THREE.Vector3(-1 * eyePosition.x, eyePosition.y, eyePosition.z),
+                        new THREE.Vector2(eyeSize.x, eyeSize.y)
+                    );
+                    this.eye2.scale.x *= -1;
+
+                    if (this.eye1.material)
+                    {
+                        this.eye1.material.transparent = true;
+                        this.eye2.material.transparent = true;
+                    }
+                    if (this.eye2.material)
+                    {
+                        this.eye1.material.opacity = 1;
+                        this.eye2.material.opacity = 1;
+                    }
+
+                    this.counter = 0;
+                }
+            );
+        }
     }
 
     randomInt(min, max)
