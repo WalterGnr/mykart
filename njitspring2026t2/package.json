@@ -1,0 +1,25 @@
+{
+  "name": "template-vite",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "nodemon src/server.cjs"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@enable3d/ammo-physics": "^0.26.1",
+    "@enable3d/phaser-extension": "^0.26.1",
+    "ammo.js": "github:kripken/ammo.js",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14",
+    "phaser": "^3.90.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
+  }
+}
