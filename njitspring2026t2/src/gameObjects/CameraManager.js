@@ -6,7 +6,7 @@ export default class CameraManager {
         this.lerpFactor = 1.0; // this fix the camera bug
     }
 
-    updateCamera(playerPosition, playerRotation) {
+    updateCamera(playerPosition, playerRotation, surfacePitch = 0) {
         const targetX = playerPosition.x - Math.sin(playerRotation) * this.orbitRadius;
         const targetZ = playerPosition.z - Math.cos(playerRotation) * this.orbitRadius;
         const targetY = playerPosition.y + this.heightOffset;
@@ -14,7 +14,10 @@ export default class CameraManager {
         this.camera.position.x += (targetX - this.camera.position.x) * this.lerpFactor;
         this.camera.position.y += (targetY - this.camera.position.y) * this.lerpFactor;
         this.camera.position.z += (targetZ - this.camera.position.z) * this.lerpFactor;
-        
-        this.camera.lookAt(playerPosition.x, playerPosition.y + 1, playerPosition.z);
+
+        // Shift the lookAt point up/down based on the kart's slope pitch so the
+        // player can see where they're going on hills and descents.
+        const slopeLookOffset = Math.sin(surfacePitch) * 4;
+        this.camera.lookAt(playerPosition.x, playerPosition.y + 1 + slopeLookOffset, playerPosition.z);
     }
 }

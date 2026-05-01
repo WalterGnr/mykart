@@ -84,6 +84,10 @@ export default class Racer extends ExtendedObject3D
         this.suspendDamping = 18;
         this.targetHeight = 2.2;
 
+        // Slope-tilt state (mesh only, no collider involvement)
+        this.surfaceNormal = new THREE.Vector3(0, 1, 0);
+        this.surfacePitch  = 0;
+
         this.checkpointsCrossed = []
         this.lapsCompleted = 0
 
@@ -260,6 +264,12 @@ export default class Racer extends ExtendedObject3D
             this.offTrackTime = 0;
             this.offTrack = false;
 
+            if (groundHit.face) {
+                const n = groundHit.face.normal.clone();
+                n.transformDirection(groundHit.object.matrixWorld);
+                this.surfaceNormal.copy(n);
+            }
+
         } else if (bgHits.length > 0) {
             // OFF TRACK (grass, etc.)
             groundHit = bgHits[0];
@@ -267,10 +277,17 @@ export default class Racer extends ExtendedObject3D
             this.offTrackTime += this.raceScene.game.loop.delta;
             this.offTrack = true;
 
+            if (groundHit.face) {
+                const n = groundHit.face.normal.clone();
+                n.transformDirection(groundHit.object.matrixWorld);
+                this.surfaceNormal.copy(n);
+            }
+
         } else {
-            // FALLING
+            // FALLING — gradually level the visual tilt back to upright
             this.isOffTrack = true;
             this.offTrackTime += this.raceScene.game.loop.delta;
+            this.surfaceNormal.lerp(new THREE.Vector3(0, 1, 0), 0.08);
 
             this.body.applyForce(0, -30, 0);
             return;
@@ -357,7 +374,23 @@ export default class Racer extends ExtendedObject3D
 
     updateVisualTilt()
     {
+        // Drift side-tilt (Y axis)
         this.visualPivot.rotation.y += (this.driftTiltTarget - this.visualPivot.rotation.y) * this.driftTiltSpeed;
+
+        // Slope pitch (X axis) — mesh only, colliders are untouched
+        const fwd = this.getWorldDirection(new THREE.Vector3());
+        fwd.y = 0;
+        if (fwd.lengthSq() > 0.001) fwd.normalize();
+
+        // Project the surface normal onto the forward axis to get the slope angle
+        const slopeAlongForward = this.surfaceNormal.dot(fwd);
+        // Negative sign: going uphill (normal tilts back) → positive pitch → nose up
+        const rawPitch   = Math.atan2(-slopeAlongForward, this.surfaceNormal.y);
+        const maxPitch   = 0.35; // ~20°
+        const targetPitch = Math.max(-maxPitch, Math.min(maxPitch, rawPitch));
+        this.surfacePitch += (targetPitch - this.surfacePitch) * 0.1;
+        this.visualPivot.rotation.x = this.surfacePitch;
+
         this._updateHop();
     }
 

@@ -177,7 +177,7 @@ export default class RaceScene extends Scene3D
 
         if (!this.debug)
         {
-            this.cameraManager.updateCamera(this.clientPlayer.position, theta);
+            this.cameraManager.updateCamera(this.clientPlayer.position, theta, this.clientPlayer.surfacePitch);
         }
 
         // check if any racers have completed the track
