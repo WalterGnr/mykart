@@ -1,6 +1,7 @@
 import { ExtendedObject3D, ThirdPersonControls, THREE } from "@enable3d/phaser-extension";
-import { PowerupTypes, SpeedBoost, Virus } from "./PowerUps";
+import { PowerupTypes, SpeedBoost, Virus, Invert, Roach } from "./PowerUps";
 import Racer from "./Racer";
+import { createSprite } from "../helperFunctions/Sprite";
 
 export default class SheepMysteryBox extends ExtendedObject3D {
     constructor(scene, position) {
@@ -10,7 +11,7 @@ export default class SheepMysteryBox extends ExtendedObject3D {
 
         const scale = 2
         const mesh = scene.third.make.box({
-            width: 1 * scale,
+            width: 2.5 * scale,
             height: 2.5 * scale,
             depth: 2.5 * scale
         });
@@ -19,11 +20,11 @@ export default class SheepMysteryBox extends ExtendedObject3D {
         mesh.visible = false;
         this.add(mesh);
 
-        this.scene.createSprite(
+        createSprite(
             this,
-            '/assets/gameObjects/powerup.png',
+            '/assets/gameObjects/downloaditem.png',
             new THREE.Vector3(0, 0, 0),
-            new THREE.Vector2(8*scale, 3*scale)
+            new THREE.Vector2(5*scale, 5*scale)
         );
 
         scene.third.add.existing(this);
@@ -33,13 +34,18 @@ export default class SheepMysteryBox extends ExtendedObject3D {
         this.body.on.collision((otherObject, event) => {
             if (otherObject instanceof Racer) 
             {
-                // Generate Random Powerup
+                console.log('Player collided with box');
                 const keys = Object.keys(PowerupTypes);
                 const randomIndex = Math.floor(Math.random() * keys.length);
                 const randomKey = keys[randomIndex];
 
+                const randomType = PowerupTypes[randomKey];
+
+                self.powerup = self.createPowerup(randomType, otherObject);
+
+                if(otherObject.key == "PLAYER")
+                    this.scene.powerupDownload(randomKey);
                 // TODO: reset back to getting a random powerup after midterm
-                self.powerup = self.createPowerup(PowerupTypes.SpeedBoost, otherObject);
                 self.givePowerup(otherObject)
 
                 // Destroy box after giving player powerup
@@ -59,10 +65,16 @@ export default class SheepMysteryBox extends ExtendedObject3D {
         switch (type)
         {
             case PowerupTypes.SpeedBoost:
-                return new SpeedBoost(racer.maxSpeed);
+                return new SpeedBoost();
 
             case PowerupTypes.Virus:
                 return new Virus();
+            
+            case PowerupTypes.Invert:
+                return new Invert();
+
+            case PowerupTypes.Roach:
+                return new Roach();
 
             default:
                 console.log(type + ' not found');
@@ -71,6 +83,6 @@ export default class SheepMysteryBox extends ExtendedObject3D {
 
     givePowerup(player)
     {
-        this.powerup.activate(player, this.scene);
+        player.currentPowerup = this.powerup;
     }
 }

@@ -1,6 +1,3 @@
-import { THREE } from '@enable3d/phaser-extension';
-import { Math } from 'phaser';
-import { Transform } from '../gameObjects/Racer';
 import RaceTrack from "./RaceTrack";
 
 export default class HelpDeskTrack extends RaceTrack 
@@ -17,6 +14,6 @@ export default class HelpDeskTrack extends RaceTrack
         this.dataFilePath = './data/HelpDeskTrack.json'
 
         // load maps
-        this.loadTrackGLB('/assets/tracks/HelpDesk.glb')
+        this.loadTrackGLB('/assets/tracks/HelpDeskTrack.glb', '/assets/tracks/HelpDeskB.glb');
     }
 }

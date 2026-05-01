@@ -19,16 +19,27 @@ export default class MenuScene extends RaceScene {
 
     async preload() {
         this.load.image('bg', '/assets/UI/loadingBackground.jpg');
-        this.load.image('titleScreen', '/assets/UI/titleScreen.png');
         this.load.image('menuSherminal', '/assets/UI/sherminal.png');
         this.load.image(`shermie`, `assets/UI/shermiecharselectnoback.png`);
 
+        this.load.image('titleScreen', '/assets/UI/titlescreenfullnoroach.png')
+        this.load.image('titleScreenR04CH', '/assets/UI/titlescreenfull.png')
+
+        this.load.image('titleScreenText', '/assets/UI/titlescreenfulltextnoroach.png')
+        this.load.image('titleScreenTextR04CH', '/assets/UI/titlescreenfulltextroach.png')
+
         this.logoSound = new Audio('/assets/music/Shermie_Boot_Up.wav');
         this.currentAudio = new Audio('/assets/music/Shermie_Beginnings.wav');
+        
     }
 
     async create() {
         this.currentScene = this;
+
+        this.hasR04CH = Phaser.Math.Between(0,1) === 1
+        this.titleScreenImage = this.hasR04CH ? 'titleScreen' : 'titleScreenR04CH'
+        this.titleTextImage = this.hasR04CH ? 'titleScreenText' : 'titleScreenTextR04CH'
+
         this.key1 = this.input.keyboard.addKey('ONE');
         this.key2 = this.input.keyboard.addKey('TWO');
         this.key3 = this.input.keyboard.addKey('THREE');
@@ -156,17 +167,20 @@ export default class MenuScene extends RaceScene {
 
     //Makes title screen appear.
     titleScreen(){
-        this.titleBG = this.add.image(640,360, 'titleScreen');
-        this.title = this.add.text(350, 100, "Shermie Kart",
+        this.background = this.add.image(640, 360, 'bg');
+        this.titleBG = this.add.image(640, 360, this.titleScreenImage);
+        /*this.title = this.add.text(350, 100, "Shermie Kart",
             {
                 fontFamily: 'Arial',
                 fontSize: '92px',
                 color: '#ffee00'
-            })
+            })*/
 
 
         this.titleBG.setInteractive({ useHandCursor:true});
         this.titleBG.on('pointerup', () => {
+            this.titleBG.destroy();
+            this.titleBG = this.add.image(640, 360, this.titleTextImage);
             this.menuSherminal = this.add.image(640, 380, 'menuSherminal');
             this.menuSherminal.setScale(0.33);
             this.togglePlayButtons();
@@ -188,4 +202,5 @@ export default class MenuScene extends RaceScene {
         this.time.delayedCall(3000, this.navitendHide, [], this);
         this.time.delayedCall(5000, this.titleScreen, [], this);
     }
+
 }

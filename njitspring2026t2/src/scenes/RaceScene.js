@@ -1,10 +1,12 @@
 import { Scene3D, THREE } from '@enable3d/phaser-extension';
-import TestTrack from '../raceTracks/TestTrack';
+import AIPlayer, { AIWaypoint } from '../gameObjects/AIPlayer';
+import { playerControllerInputChecks, playerKeyInputChecks } from '../helperFunctions/PlayerMovement';
+import CharacterSelectionArea from '../raceTracks/CharacterSelectionArea';
 import HelpDeskTrack from '../raceTracks/HelpDeskTrack';
-import AIPlayer from '../gameObjects/AIPlayer'
 import MotherboardTrack from '../raceTracks/MotherboardTrack';
 import ShermieRoadTrack from '../raceTracks/ShermieRoadTrack';
-import CharacterSelectionArea from '../raceTracks/CharacterSelectionArea';
+import TestTrack from '../raceTracks/TestTrack';
+import TerminalTrack from '../raceTracks/TerminalTrack';
 
 export default class RaceScene extends Scene3D
 {
@@ -21,18 +23,20 @@ export default class RaceScene extends Scene3D
             'shermald',
             'fido',
             'virrel',
-            'r04ch'
+            'r04ch',
+            'kitty',
+            'ratley',
+            'charles',
+            'snakington'
         ]
 
         this.aiRacers = []
-        this.waypointTags = []
-
         this.trackList = [
             'TestTrack',
             'HelpDeskTrack',
             'MotherboardTrack',
             'ShermieRoadTrack',
-            'CharacterSelectionArea'
+            'TerminalTrack'
         ]
         this.currentTrackIndex = 0
         this.currentTrack = null
@@ -42,23 +46,31 @@ export default class RaceScene extends Scene3D
         this.paused = false;
         this.shermieFlag;
         this.sherminal;
-        this.lapUI;
-        this.lapUIBack;
-        this.placeUI;
+        this.lapUI = [];
+        this.lapUIBack = [];
+        this.placeUI = [];
         this.resumeButton;
         this.menuButton;
-        this.lapNumber = 1;
-        this.placeNumber = 1;
+        this.lapNumber = [];
+        this.placeNumber = [];
         this.currentAudio;
         this.selectedCharacter = "shermie";
+        this.loadingScreen; 
+        this.ready;
+        this.raceStarted = false;
+        this.playerGo = false;
+        this.powerupItem;
 
         this.racerCompletionOrder = []
         this.trackMesh = undefined
+        this.debug = false
     }
 
     init() 
     {
         this.accessThirdDimension({ antialias: true });
+        this.raceStarted = false;
+        this.playerGo = false;
     }
 
     async preload()
@@ -66,13 +78,38 @@ export default class RaceScene extends Scene3D
         this.third.load.preload('skybox', 'assets/skybox/DigitalWorld.png');
         this.load.image('flag', '/assets/UI/shermieFlag.png');
         this.load.image('sherminal', '/assets/UI/sherminal.png');
+
+        for(let i = 0; i <= 10; i++){
+            this.load.image(`loaditem${i}`, `/assets/UI/loaditem${i}.png`);
+        }
+
+        this.load.image(`boostItem`, `/assets/UI/boostitem.png`);
+        this.load.image(`firewallItem`, `/assets/UI/firewall.png`);
+        this.load.image(`roachItem`, `/assets/UI/roachitem.png`);
+        this.load.image(`virusItem`, `/assets/UI/virusitem.png`);
+        this.load.image(`invertItem`, `/assets/UI/invertitem.png`);
         
     }
 
     async create()
     {
+        if(this.anims.exists('downloading')){
+            this.anims.remove('downloading');
+        }
+
+        this.anims.create({
+                key: 'downloading',
+                frames: Array.from({ length: 11}, (_, i) => ({
+                    key: `loaditem${i}`
+                })),
+                frameRate:12,
+                repeat: 0
+            });
+            
         // Initialize 3D Space
-        await this.third.warpSpeed('-sky', '-ground', '-orbitControls');
+        const { orbitControls } = await this.third.warpSpeed('-sky', '-ground', 'orbitControls');
+        this.orbitControls = orbitControls
+
         await this.createSkyBox(2000, 'skybox');
 
         // Racer Controls
@@ -81,11 +118,16 @@ export default class RaceScene extends Scene3D
             brake: this.input.keyboard.addKey('S'),
             left: this.input.keyboard.addKey('A'),
             right: this.input.keyboard.addKey('D'),
+            accelerate2: this.input.keyboard.addKey('UP'),
+            brake2: this.input.keyboard.addKey('DOWN'),
+            left2: this.input.keyboard.addKey('LEFT'),
+            right2: this.input.keyboard.addKey('RIGHT'),
             drift: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
+            drift2: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CTRL),
             printPosition: this.input.keyboard.addKey('P'),
             pause: this.input.keyboard.addKey('ESC'),
-            win: this.input.keyboard.addKey('N')
-
+            win: this.input.keyboard.addKey('N'),
+            debugToggle: this.input.keyboard.addKey('O')
         };
 
         for (let i = 0; i < this.input.gamepad.total; i++)
@@ -97,6 +139,17 @@ export default class RaceScene extends Scene3D
         this.events.on('resume', () => {
             this.togglePauseMenuOff();
         })
+
+        this.offTrackText = this.add.text(640, 200, '', {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '40px',
+            color: '#ffffff',          // white text
+            stroke: '#000000',         // black outline
+            strokeThickness: 6,        // thickness of outline
+            align: 'center'
+        }).setOrigin(0.5);
+
+        this.offTrackText.setVisible(false);
     }
 
     update()
@@ -106,10 +159,15 @@ export default class RaceScene extends Scene3D
         // calculate clientPlayer and camera rotation
         this.clientPlayer.update();
         const theta = this.getNewCameraAngle(this.clientPlayer)
-        if(this.gamepads[0])
-            this.playerControllerInputChecks(this.clientPlayer, theta, this.gamepads[0]);
+
+        if(this.playerGo && !this.debug){
+            if(this.gamepads[0])
+                playerControllerInputChecks(this.clientPlayer, theta, this.gamepads[0]);
+            else
+                playerKeyInputChecks(this.clientPlayer, theta, this.keys);
+        }
         else
-            this.playerKeyInputChecks(this.clientPlayer, theta);
+            this.clientPlayer.stickToTrack();
 
 
         // Update AI
@@ -117,11 +175,62 @@ export default class RaceScene extends Scene3D
             this.aiRacers[i].update();
         }
 
-        this.cameraManager.updateCamera(this.clientPlayer.position, theta);
+        if (!this.debug)
+        {
+            this.cameraManager.updateCamera(this.clientPlayer.position, theta);
+        }
+
+        // check if any racers have completed the track
+        if (this.currentTrack.hasCompletedTrack(this.clientPlayer.lapsCompleted))
+        {
+            // TODO: implement me
+            console.log(this.clientPlayer.key + " finished lap")
+        }
+
+        // handle off-track respawn
+        if (
+            this.clientPlayer.isOffTrack &&
+            this.clientPlayer.offTrackTime > this.clientPlayer.maxOffTrackTime &&
+            !this.clientPlayer.isRespawning
+        ) {
+            // prevent instant loop
+            this.clientPlayer.offTrackTime = 0;
+
+            this.currentTrack.handlePitRespawn(this.clientPlayer);
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.keys.pause)) this.togglePauseMenuOn();
+
+        // Debug Keys
+        if (Phaser.Input.Keyboard.JustDown(this.keys.win)) this.winRace();
+        if (Phaser.Input.Keyboard.JustDown(this.keys.debugToggle))
+        {
+            this.debug = !this.debug
+
+            if (this.debug)
+            {
+                this.third.physics.debug.enable()
+                this.clientPlayer.body.setVelocity(0, 0, 0);
+                this.clientPlayer.body.setAngularVelocity(0, 0, 0);
+            }
+            else
+            {
+                this.third.physics.debug.disable()
+            }
+
+            this.orbitControls.enabled = this.debug
+        }
+
+        // console.log(
+        //     "OffTrack:", this.clientPlayer.isOffTrack,  // Offtrack status
+        //     "Time:", this.clientPlayer.offTrackTime
+        // );
+
+        this.updateOffTrackUI();
     }
 
     // Scene-Init Functions
-    async createSkyBox(len, textureName) 
+    async createSkyBox(len, textureName)
     {
         const loader = new THREE.CubeTextureLoader()
 
@@ -153,6 +262,8 @@ export default class RaceScene extends Scene3D
             this.currentTrack = new MotherboardTrack(this, trackName)
         else if (trackName === 'ShermieRoadTrack')
             this.currentTrack = new ShermieRoadTrack(this, trackName)
+        else if (trackName === 'TerminalTrack')
+            this.currentTrack = new TerminalTrack(this, trackName)
         else if (trackName === 'CharacterSelectionArea')
             this.currentTrack = new CharacterSelectionArea(this, trackName)
         else console.log(`${trackName} not in trackList`)
@@ -161,88 +272,95 @@ export default class RaceScene extends Scene3D
     // UI Functions
     createPlayerUI(multiplayer = false)
     {
-        if(multiplayer)
+        if (multiplayer)
         {
             this.sherminal = this.add.image(130,70, 'sherminal');
             this.sherminal.setScale(0.10);
             this.lapUIBack = this.add.rectangle(150,325, 140, 60, 1,0.5);
             this.shermieFlag = this.add.image(130,330, 'flag');
             this.shermieFlag.setScale(0.05);
-            this.lapUI = this.add.text(160, 310, this.lapNumber + "/3",
-                {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '30px',
-                    color: '#ffffff'
-                })
-            this.placeUI = this.add.text(1180, 250, this.placeNumber,
-                {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '100px',
-                    color: '#f05C22'
-                })
-            this.placeUI.setShadow(3, 3, '#000000', 0);
             this.sherminal2 = this.add.image(130,420, 'sherminal');
             this.sherminal2.setScale(0.10);
             this.lapUIBack2 = this.add.rectangle(150,685, 140, 60, 1,0.5);
             this.shermieFlag2 = this.add.image(130,690, 'flag');
             this.shermieFlag2.setScale(0.05);
-            this.lapUI2 = this.add.text(160, 670, this.lapNumber + "/3",
-                {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '30px',
-                    color: '#ffffff'
-                })
-            this.placeUI2 = this.add.text(1180, 620, this.placeNumber,
-                {
-                    fontFamily: '"Press Start 2P"',
-                    fontSize: '100px',
-                    color: '#f05C22'
-                })
-            this.placeUI2.setShadow(3, 3, '#000000', 0);
-
         }
-        else{
-        this.sherminal = this.add.image(130,115, 'sherminal');
-        this.sherminal.setScale(0.15);
-        this.lapUIBack = this.add.rectangle(130,657, 200, 100, 1,0.5);
-        this.shermieFlag = this.add.image(100,660, 'flag');
-        this.shermieFlag.setScale(0.08);
-        this.lapUI = this.add.text(140, 635, this.lapNumber + "/" + this.lapTotal,
-            {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '55px',
-                color: '#ffffff'
-            })
-        this.placeUI = this.add.text(1180, 570, this.placeNumber,
-            {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '150px',
-                color: '#f05C22'
-            })
-        this.placeUI.setShadow(3, 3, '#000000', 0);
+        else
+        {
+            this.sherminal = this.add.image(130,115, 'sherminal');
+            this.sherminal.setScale(0.15);
+            this.lapUIBack[0] = this.add.rectangle(130,657, 200, 100, 1,0.5);
+            this.shermieFlag = this.add.image(100,660, 'flag');
+            this.shermieFlag.setScale(0.08);
         }
-
-
     }
 
-    updatePlayerUI(lapNumber = this.lapNumber, placeNumber = this.placeNumber)
+    updatePlayerUI(lapNumber = this.lapNumber[0], placeNumber = this.placeNumber[0], player = 1, multiplayer = false)
     {
         if(this.paused == false){
-        this.lapUI.destroy();
-        this.placeUI.destroy();
-        this.lapUI = this.add.text(140, 635, lapNumber + "/" + this.currentTrack.lapGoal,
-            {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '55px',
-                color: '#ffffff'
-            })
-        this.placeUI = this.add.text(1180, 570, placeNumber,
-            {
-                fontFamily: '"Press Start 2P"',
-                fontSize: '150px',
-                color: '#f05C22'
-            })
-        this.placeUI.setShadow(3, 3, '#000000', 0);
+            this.placeNumber[player-1] = placeNumber;
+            this.lapNumber[player-1] = lapNumber;
+            if(multiplayer && player == 1){
+                this.lapPosX = 160;
+                this.lapPosY = 310;
+                this.placePosX = 1180;
+                this.placePosY = 250;
+                this.lapFontSize = '30px';
+                this.placeFontSize = '100px';
+            }
+            else if(multiplayer && player == 2){
+                this.lapPosX = 160;
+                this.lapPosY = 670;
+                this.placePosX = 1180;
+                this.placePosY = 620;
+                this.lapFontSize = '30px';
+                this.placeFontSize = '100px';
+            }
+            else{
+                this.lapPosX = 140;
+                this.lapPosY = 635;
+                this.placePosX = 1180;
+                this.placePosY = 570;
+                this.lapFontSize = '55px';
+                this.placeFontSize = '150px';
+            }
+
+            if (this.lapUI[player-1]) this.lapUI[player-1].destroy();
+            if (this.placeUI[player-1]) this.placeUI[player-1].destroy();
+            this.lapUI[player-1] = this.add.text(this.lapPosX, this.lapPosY, this.lapNumber[player-1] + "/" + this.currentTrack.lapGoal,
+                {
+                    fontFamily: '"Press Start 2P"',
+                    fontSize: this.lapFontSize,
+                    color: '#ffffff'
+                });
+            this.placeUI[player-1] = this.add.text(this.placePosX, this.placePosY, this.placeNumber[player-1],
+                {
+                    fontFamily: '"Press Start 2P"',
+                    fontSize: this.placeFontSize,
+                    color: '#f05C22'
+                });
+            this.placeUI[player-1].setShadow(3, 3, '#000000', 0);
+        }
+    }
+
+    updateOffTrackUI() {
+        const player = this.clientPlayer;
+
+        if (!player) return;
+
+        if (player.isOffTrack && !player.isRespawning) {
+            const timeLeft = Math.max(
+                0,
+                (player.maxOffTrackTime - player.offTrackTime) / 1000
+            );
+
+            this.offTrackText.setText(
+                `OFF TRACK!\nRespawning in ${timeLeft.toFixed(1)}`
+            );
+
+            this.offTrackText.setVisible(true);
+        } else {
+            this.offTrackText.setVisible(false);
         }
     }
 
@@ -264,40 +382,40 @@ export default class RaceScene extends Scene3D
 
    sceneSwitch(sherminal, x, y, scale, scene, data = null, pause = false){
         this.tweens.add(
-                {
-                    targets: sherminal,
-                    x: x,
-                    y: y,
-                    scale: scale,
-                    duration: 100,
-                    onComplete: () => {
-                        if(pause == true){
-                            if(data != null)
-                                this.scene.launch(scene, data);
-                            else
-                                this.scene.launch(scene);
-                            this.sherminal.setVisible(false);
-                            this.time.delayedCall(0, () => {
-                                this.scene.pause();
-                        });}
+            {
+                targets: sherminal,
+                x: x,
+                y: y,
+                scale: scale,
+                duration: 100,
+                onComplete: () => {
+                    if(pause == true){
+                        if(data != null)
+                            this.scene.launch(scene, data);
+                        else
+                            this.scene.launch(scene);
+                        this.sherminal.setVisible(false);
+                        this.time.delayedCall(0, () => {
+                            this.scene.pause();
+                    });}
+                    else{
+                        if(data != null){
+                            console.log(this.currentScene);
+                            this.scene.stop(this.currentScene);
+                            this.scene.start(scene, data);
+                        }
                         else{
-                            if(data != null){
-                                console.log(this.currentScene);
-                                this.scene.stop(this.currentScene);
-                                this.scene.start(scene, data);
-                            }
-                            else{
-                                console.log(this.currentScene);
-                                this.scene.stop(this.currentScene);
-                                this.scene.start(scene);
-                            }}
-                    }
-
+                            console.log(this.currentScene);
+                            this.scene.stop(this.currentScene);
+                            this.scene.start(scene);
+                        }}
                 }
-            );
+
+            });
     }
 
-    togglePauseMenuOff(){
+    togglePauseMenuOff()
+    {
         this.paused = false;
         this.sherminal.setVisible(true);
         this.moveSherminal(this.sherminal, 130, 115, 0.15);
@@ -322,136 +440,6 @@ export default class RaceScene extends Scene3D
         this.sceneSwitch(this.sherminal, 640,255,0.45,'WinScene');
     }
 
-    // Player-Related Functions
-    playerKeyInputChecks(player, direction) 
-    {
-        const driftHeld = this.keys.drift.isDown;
-        const leftHeld  = this.keys.left.isDown;
-        const rightHeld = this.keys.right.isDown;
-        const accelHeld = this.keys.accelerate.isDown;
-        const brakeHeld = this.keys.brake.isDown;
-
-        const steerSide = leftHeld ? 'left' : rightHeld ? 'right' : null;
-
-        // --- Drift input ---
-        if (driftHeld && accelHeld && steerSide && !player.drifting)
-        {
-            // Initiate drift — lock direction from whichever turn key is held
-            player.startDrift(direction, steerSide);
-        }
-
-        if (player.drifting)
-        {
-            if (driftHeld)
-            {
-                // Continue drift — steer input widens/tightens but doesn't override direction
-                player.updateDrift(direction, steerSide);
-            }
-            else
-            {
-                // Drift button released — fire boost
-                player.endDrift();
-            }
-        }
-        else
-        {
-            // Normal steering
-            if (leftHeld)       player.turnLeft();
-            else if (rightHeld) player.turnRight();
-            else                player.autoCenter();
-        }
-
-        // --- Acceleration ---
-        if (!player.drifting)
-        {
-            if (accelHeld)      player.moveForward(direction);
-            else if (brakeHeld) player.moveBackward(direction);
-            else if (!leftHeld && !rightHeld) player.stop(direction);
-        }
-        else
-        {
-            // Keep speed up while drifting
-            if (accelHeld) player.moveForward(direction);
-        }
-
-        // Drift boost decays every frame regardless
-        player.applyDriftBoost(direction);
-
-        if (this.keys.printPosition.isDown) console.log(player.position);
-        if (Phaser.Input.Keyboard.JustDown(this.keys.pause)) this.togglePauseMenuOn();
-        if (Phaser.Input.Keyboard.JustDown(this.keys.win))this.winRace();
-    }
-
-    playerControllerInputChecks(player, direction, gamepad)
-    {
-        if (this.input.gamepad.total == 0 || !gamepad)
-        {
-            // console.log("no controller connected");
-            player.stickToTrack()
-            return;
-        }
-        
-        const driftHeld = gamepad.R1;
-        const leftHeld  = gamepad.left;
-        const rightHeld = gamepad.right;
-        const accelHeld = gamepad.A;
-        const brakeHeld = gamepad.B;
-        
-        const steerSide = leftHeld ? 'left' : rightHeld ? 'right' : null;
-
-        // --- Drift input ---
-        if (driftHeld && accelHeld && steerSide && !player.drifting)
-        {
-            // Initiate drift — lock direction from whichever turn key is held
-            player.startDrift(direction, steerSide);
-        }
-
-        if (player.drifting)
-        {
-            if (driftHeld)
-            {
-                // Continue drift — steer input widens/tightens but doesn't override direction
-                player.updateDrift(direction, steerSide);
-            }
-            else
-            {
-                // Drift button released — fire boost
-                player.endDrift();
-            }
-        }
-        else
-        {
-            // Normal steering
-            if (leftHeld)       player.turnLeft();
-            else if (rightHeld) player.turnRight();
-            else                player.autoCenter();
-        }
-
-        // --- Acceleration ---
-        if (!player.drifting)
-        {
-            if (accelHeld)      player.moveForward(direction);
-            else if (brakeHeld) player.moveBackward(direction);
-            else if (!leftHeld && !rightHeld) player.stop(direction);
-        }
-        else
-        {
-            // Keep speed up while drifting
-            if (accelHeld) player.moveForward(direction);
-        }
-
-        // Drift boost decays every frame regardless
-        player.applyDriftBoost(direction);
-/*
-        if (gamepad.left) player.turnLeft();
-        else if (gamepad.right) player.turnRight();
-        else player.stop(direction); //was player.stop()
-
-        if (gamepad.A) player.moveForward(direction);
-        else if (gamepad.B) player.moveBackward(direction);
-        else player.stop(direction);*/
-    }
-
     getNewCameraAngle(player)
     {
         const rotation = player.getWorldDirection(new THREE.Vector3()?.setFromEuler?.(player.rotation) || player.rotation);
@@ -474,22 +462,10 @@ export default class RaceScene extends Scene3D
         
             default:
                 return this.input.gamepad.pad1;
-            
         }
     }
 
-    createSprite(gameObject, texturePath, pos, scale = new THREE.Vector2(1,1), color = 0xffffff){
-        const map = new THREE.TextureLoader().load(texturePath);
-        const material = new THREE.SpriteMaterial( { map: map, color } );
-        const sprite = new THREE.Sprite( material );
-        sprite.position.set(pos.x, pos.y, pos.z);
-        sprite.scale.set(scale.x,scale.y,1);
-        gameObject.add(sprite);
-        return sprite;
-    }
-
-    // AI functions
-    createAIRacers(amount)
+    async createAIRacers(amount)
     {
         if (!this.currentTrack)
         {
@@ -497,97 +473,131 @@ export default class RaceScene extends Scene3D
             return;
         }
 
+        const loadPromises = [];
+
         for (let i = 0; i < amount; i++) {
             const spawnTransform = this.currentTrack.getRandomSpawnTransform();
 
-            // Clone waypoints for this AI
-            let aiWaypoints = [...this.currentTrack.lapCheckpointSensors.map(p => p.position.clone())];
+            let aiWaypoints = []
+            for (let i = 0; i < this.currentTrack.lapCheckpointSensors.length; i++)
+            {
+                const checkpoint = this.currentTrack.lapCheckpointSensors[i]
+                const newWaypoint = new AIWaypoint(checkpoint.position.clone(), checkpoint.tag, checkpoint.aiJitter)
 
-            // --- Add random jitter to each waypoint ---
-            const jitterAmount = 16; // max deviation in any direction (x/z)
-            aiWaypoints = aiWaypoints.map(p => {
-                return p.clone().add(new THREE.Vector3(
-                    (Math.random() - 0.5) * jitterAmount,
-                    0, // keep y the same
-                    (Math.random() - 0.5) * jitterAmount
-                ));
-            });
-            
-
-            // Smooth the path using Catmull-Rom spline
-            const curve = new THREE.CatmullRomCurve3(aiWaypoints);
-            const smoothedWaypoints = curve.getPoints(aiWaypoints.length + 7);
-
-            this.createAIWaypoints(smoothedWaypoints)
+                aiWaypoints.push(newWaypoint);
+            }
 
             const ai = new AIPlayer(
                 this, 
                 spawnTransform, 
-                smoothedWaypoints, 
+                aiWaypoints,
+                this.currentTrack.subpaths,
                 `COM${i + 1}`,
-                this.characters[Math.floor(Math.random() * (this.characters.length -1 - 0 + 1)) + 0]
+                this.characters[i+1]
+                //Math.floor(Math.random() * this.characters.length)
             );
-
-            // Stagger start slightly to avoid collision
-            this.time.delayedCall(i * 500, () => {
-                ai.currSpeed = 10; // initial speed
-            });
+            loadPromises.push(ai.loadModelAsync());
         }
+        await Promise.all(loadPromises);
     }
 
-    createAIWaypoints(list)
-    {
-        let i = 1
-        list.forEach(position => {
-            const waypoint = this.third.make.box({
-                x: position.x,
-                y: position.y - 13,
-                z: position.z,
-                width: 7,
-                height: 20,
-                depth: 7
-            });
+    createLoadingScreen(){
+        this.loadingBackground = this.add.image(640,360, 'bg');
+        this.loadingScreen = this.add.image(640,360, 'loaditem0');
+        this.loadingScreen.setScale(1.3);
+    }
 
-            waypoint.tag = `Waypoint #${i}`
-            this.waypointTags.push(waypoint.tag)
+    updateLoadingScreen(phase){
+        this.children.bringToTop(this.loadingBackground);
+        this.loadingScreen.destroy();
+        this.loadingScreen = this.add.image(640,360, `loaditem${phase}`);
+        this.loadingScreen.setScale(1.3);
+    }
 
-            this.third.physics.add.existing(waypoint, { collisionFlags: 6 });
+    hideLoadingScreen(){
+        this.updateLoadingScreen(10);
+        this.time.delayedCall(1000, () => {
+            this.loadingScreen.destroy();
+            this.loadingBackground.destroy();
+            this.ready = true;
 
-            waypoint.body.on.collision((otherObject, event) => {
-                if (otherObject instanceof AIPlayer &&
-                    this.verifyWaypoints(otherObject, waypoint.tag)
-                ) {
-                    otherObject.currentWaypointIndex = (otherObject.currentWaypointIndex + 1) % otherObject.waypoints.length;
-
-                    otherObject.waypointsCrossed.push(waypoint.tag)
-
-                    this.resetWaypointChecks(otherObject, waypoint.tag)
-                }
-            })
-
-            i++;
         });
     }
 
-    verifyWaypoints(racer, waypointCrossed)
-    {
-        if (waypointCrossed === 'Waypoint #1' && racer.waypointsCrossed.length === 0)
-            return true;
+    startRace(){
+        this.raceStarted = true;
 
-        const slicedCheck = this.waypointTags.slice(0, this.waypointTags.indexOf(waypointCrossed))
-        const isReachedWaypointValid = slicedCheck.every((element, index) => element === racer.waypointsCrossed[index]) && 
-                                         !racer.waypointsCrossed.includes(waypointCrossed)
+        let i = 3;
 
-        return isReachedWaypointValid;
+        this.time.addEvent({
+            delay: 1000,
+            repeat: 3,
+            callback: () => {
+                if(this.countdown) this.countdown.destroy();
+
+                this.countdown = this.add.text(640, 100, i > 0 ? `${i}` : 'GO!', {
+                    fontFamily: '"Press Start 2P"',
+                    fontSize: '100px',
+                    color: '#f05C22'
+                });
+
+                this.countdown.setShadow(3, 3, '#000000', 0);
+
+                this.countdown.setOrigin(0.5,0);
+                
+                if (i === 0){
+                    this.time.delayedCall(1000, () => {
+                        this.countdown.destroy();
+                    });
+                    this.time.delayedCall(100, () => {
+                        //Start AI Racers
+                        for (let i = 0; i < this.aiRacers.length; i++)
+                        {
+                            const racer = this.aiRacers[i]
+
+                            racer.raceStart = true;
+                        }
+                        this.playerGo = true;
+                    });
+                }
+
+                this.tweens.add({
+                    targets: this.countdown,
+                    scale: { from: 0.5, to: 1},
+                    duration: 200,
+                    ease: 'Back.Out'
+                });
+                i--;
+            }
+        });
+
     }
 
-    resetWaypointChecks(racer, waypointCrossed)
-    {
-        if (waypointCrossed === this.waypointTags[this.waypointTags.length - 1])
-        {
-            racer.currentTrackIndex = 0
-            racer.waypointsCrossed = [];
-            // console.log(racer.key + " reset waypoint checks")
+    powerupDownload(powerup){
+        this.downloading = this.add.sprite(130,125, 'loaditem0').play('downloading');
+        
+        const powerupImages = {
+            Virus: 'virusItem',
+            SpeedBoost: 'boostItem',
+            Invert: 'invertItem',
+            Roach: 'roachItem'
+        };
+
+        const texture = powerupImages[powerup];
+
+        this.downloading.once('animationcomplete-downloading', () => {
+            this.downloading.destroy();
+
+            if(texture){
+            this.powerupItem = this.add.image(130, 120, texture);
+        } else{
+            console.log(powerup + ' not found');
         }
+        })
+    }
+
+    powerUpClear(){
+        if(this.powerupItem)
+            this.powerupItem.destroy();
     }
 }

@@ -3,7 +3,7 @@ export default class CameraManager {
         this.camera = camera;
         this.orbitRadius = 10;  
         this.heightOffset = 4;   
-        this.lerpFactor = 0.1;
+        this.lerpFactor = 1.0; // this fix the camera bug
     }
 
     updateCamera(playerPosition, playerRotation) {

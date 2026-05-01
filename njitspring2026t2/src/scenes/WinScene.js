@@ -27,9 +27,7 @@ export default class WinScene extends RaceScene {
         this.titleScreen();
     }
 
-    update() 
-    {
-    }
+    update() { }
 
     //Function creates a button that changes to desired scene.
     changeSceneButton(positionx, positiony, name, targetScene, color){
@@ -65,7 +63,6 @@ export default class WinScene extends RaceScene {
             this.sceneSwitch(this.winSherminal, positionx, positiony, 0.33, targetScene, this.data);
         });
     }
-
 
     //Makes title screen appear.
     titleScreen(){

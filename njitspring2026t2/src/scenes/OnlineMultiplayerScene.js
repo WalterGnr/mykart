@@ -1,7 +1,9 @@
 import Player from '../gameObjects/Player';
+import { THREE } from '@enable3d/phaser-extension';
 import io from 'socket.io-client';
-import RaceScene from './RaceScene';
 import CameraManager from '../gameObjects/CameraManager';
+import { Transform } from '../helperFunctions/Transform'
+import RaceScene from './RaceScene';
 
 export default class OnlineMultiplayerScene extends RaceScene {   
     constructor() 
@@ -14,6 +16,15 @@ export default class OnlineMultiplayerScene extends RaceScene {
     init(data){
         super.init();
         this.selectedCharacter = data.selectedCharacter ?? 'shermie';
+
+        
+        this.clientPlayer = null;
+        this.cameraManager = null;
+        this.currentTrack = null;
+        this.currentAudio = null;
+        this.aiRacers = [];
+        this.racerCompletionOrder = [];
+        this.gamepads = [];
     }
 
     async create() 

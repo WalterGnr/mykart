@@ -11,8 +11,8 @@ export default class MotherboardTrack extends RaceTrack
         this.BGM.loop = true;
         this.BGM.volume = 0.5;
 
-        // TODO: set AI waypoints
+        this.dataFilePath = './data/MotherboardTrack.json'
 
-        this.loadTrackGLB('/assets/tracks/Motherboard.glb')
+        this.loadTrackGLB('/assets/tracks/MotherboardTrack.glb', '/assets/tracks/MotherboardB.glb');
     }
 }

@@ -1,0 +1,249 @@
+{
+    "lapGoal": 2,
+    "lapCheckpointGoal": 31,
+    "subpaths": [],
+    "lapCheckpointTransforms":
+    [
+        {
+            "tag": "C_01_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [66.48887634277344, -21.39832878112793, 230.5], 
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_02_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [13.48887634277344, -21.39832878112793, 230.5], 
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_03_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [-65.00651550292969, -20.44546890258789, 230.5],
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_04_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [-110.00651550292969, -20.44546890258789, 230.5],
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_05_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [-165.00651550292969, -20.44546890258789, 230.5],
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_06_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [-222.00550842285156, -18.872831344604492, 230.5],
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_07_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [-286.2936706542969, -17.48912811279297, 229.4261932373047],
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_08_X",
+            "aiJitter": 12,
+            "colliderLength": 110,
+            "position": [-336.6602783203125, -11.360066413879395, 228.4639129638672],
+            "rotation": [0, 320, 0]
+        },
+        {
+            "tag": "C_09_X",
+            "aiJitter": 12,
+            "colliderLength": 110,
+            "position": [-430.3739318847656, 16.208356857299805, 194.5814208984375],
+            "rotation": [0, 290, 0]
+        },
+        {
+            "tag": "C_10_X",
+            "aiJitter": 6,
+            "colliderLength": 100,
+            "position": [-462.6042785644531, 27.919769287109375, 106.39180755615234],
+            "rotation": [0, 270, 0]
+        },
+        {
+            "tag": "C_11_X",
+            "aiJitter": 6,
+            "colliderLength": 100,
+            "position": [-463.278076171875, 28.250843048095703, 56.278419494628906],
+            "rotation": [0, 270, 0]
+        },
+        {
+            "tag": "C_12_X",
+            "aiJitter": 6,
+            "colliderLength": 100,
+            "position": [-444.4606628417969, 29.046016693115234, -10.45390701293945],
+            "rotation": [0, 270, 0]
+        },
+        {
+            "tag": "C_13_X",
+            "aiJitter": 8,
+            "colliderLength": 100,
+            "position": [-423.9915466308594, 26.56048011779785, -86.35624694824219],
+            "rotation": [0, 225, 0]
+        },
+        {
+            "tag": "C_14_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [-352.303955078125, 11.461827278137207, -137.5283203125],
+            "rotation": [0, 180, 0]
+        },
+        {
+            "tag": "C_15_X",
+            "aiJitter": 13,
+            "colliderLength": 100,
+            "position": [-253.4897918701172, -11.70529556274414, -123.22303771972656],
+            "rotation": [0, 145, 0]
+        },
+        {
+            "tag": "C_16_X",
+            "aiJitter": 12,
+            "colliderLength": 100,
+            "position": [-178.60623168945312, -21.434362411499023, -64.24610900878906],
+            "rotation": [0, 145, 0]
+        },
+        {
+            "tag": "C_17_X",
+            "aiJitter": 13,
+            "colliderLength": 110,
+            "position": [-115.78516387939453, -21.35892105102539, -33.98593521118164],
+            "rotation": [0, 180, 0]
+        },
+        {
+            "tag": "C_18_X",
+            "aiJitter": 13,
+            "colliderLength": 110,
+            "position": [-58.152286529541016, -22.333911895751953, -28.96318817138672],
+            "rotation": [0, 180, 0]
+        },
+        {
+            "tag": "C_19_X",
+            "aiJitter": 13,
+            "colliderLength": 110,
+            "position": [-10, -22.332998275756836, -28.453399658203125],
+            "rotation": [0, 180, 0]
+        },
+        {
+            "tag": "C_20_X",
+            "aiJitter": 13,
+            "colliderLength": 110,
+            "position": [51.347251892089844, -22.331527709960938, -28.52452278137207],
+            "rotation": [0, 180, 0]
+        },
+        {
+            "tag": "C_21_X",
+            "aiJitter": 13,
+            "colliderLength": 120,
+            "position": [105.8694305419922, -21.398422241210938, -29.41048812866211],
+            "rotation": [0, 180, 0]
+        },
+        {
+            "tag": "C_22_X",
+            "aiJitter": 13,
+            "colliderLength": 150,
+            "position": [154.44692993164062, -22.332904815673828, -29.7984676361084],
+            "rotation": [0, 155, 0]
+        },
+        {
+            "tag": "C_23_X",
+            "aiJitter": 12,
+            "colliderLength": 150,
+            "position": [209.66314697265625, -22.332124710083008, -17.461408615112305],
+            "rotation": [0, 145, 0]
+        },
+        {
+            "tag": "C_24_X",
+            "aiJitter": 12,
+            "colliderLength": 140,
+            "position": [254.3345489501953, -22.333637237548828, -0.055646877735853195],
+            "rotation": [0, 120, 0]
+        },
+        {
+            "tag": "C_25_X",
+            "aiJitter": 13,
+            "colliderLength": 140,
+            "position": [300.16851806640625, -22.332639694213867, 43.14391326904297],
+            "rotation": [0, 105, 0]
+        },
+        {
+            "tag": "C_26_X",
+            "aiJitter": 13,
+            "colliderLength": 150,
+            "position": [310.62750244140625, -22.334232330322266, 84.75145721435547],
+            "rotation": [0, 90, 0]
+        },
+        {
+            "tag": "C_27_X",
+            "aiJitter": 8,
+            "colliderLength": 180,
+            "position": [327.48333740234375, -22.334075927734375,  138.89035034179688],
+            "rotation": [0, 75, 0]
+        },
+        {
+            "tag": "C_28_X",
+            "aiJitter": 6,
+            "colliderLength": 180,
+            "position": [303.1020812988281, -22.333425521850586, 174.8258819580078],
+            "rotation": [0, 55, 0]
+        },
+        {
+            "tag": "C_29_X",
+            "aiJitter": 6,
+            "colliderLength": 170,
+            "position": [243.26458740234375, -22.334064483642578, 220.22476196289062],
+            "rotation": [0, 17, 0]
+        },
+        {
+            "tag": "C_30_X",
+            "aiJitter": 13,
+            "colliderLength": 140,
+            "position": [185.36328125, -22.332612991333008, 229.6879119873047],
+            "rotation": [0, 0, 0]
+        },
+        {
+            "tag": "C_31_X",
+            "aiJitter": 13,
+            "colliderLength": 140,
+            "position": [143.63819885253906, -22.333816528320312, 230.60775756835938],
+            "rotation": [0, 0, 0]
+        }
+    ],
+    "racerStartTransforms":
+    {
+        "spacing": -5,
+        "rotation": 90,
+        "row1Start": 124,
+        "row2Start": 111,
+        "columnStart": 241,
+        "yStart": -35
+    },
+    "mysteryBoxPositions":
+    [
+        {
+            "centerPosition": [-222.00550842285156, -18 , 230.5],
+            "rotationOffset": 45,
+            "padding": 15,
+            "amount": 7
+        },
+        {
+            "centerPosition": [-2.87556457519531, -22.279560089111328, -32.04624557495117],
+            "rotationOffset": 45,
+            "padding": 12,
+            "amount": 8
+        }
+    ]
+}
