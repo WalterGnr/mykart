@@ -377,19 +377,25 @@ export default class Racer extends ExtendedObject3D
         // Drift side-tilt (Y axis)
         this.visualPivot.rotation.y += (this.driftTiltTarget - this.visualPivot.rotation.y) * this.driftTiltSpeed;
 
-        // Slope pitch (X axis) — mesh only, colliders are untouched
-        const fwd = this.getWorldDirection(new THREE.Vector3());
-        fwd.y = 0;
-        if (fwd.lengthSq() > 0.001) fwd.normalize();
+        // ── Slope pitch (X axis) ─────────────────────────────────────────────
+        // Use the kart's actual physics velocity to detect the slope angle.
+        // vel.y / hSpeed = sin(slope_angle), which is always correct regardless
+        // of mesh normals or track geometry. Colliders are never touched.
+        const vel    = this.body.velocity;
+        const hSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
 
-        // Project the surface normal onto the forward axis to get the slope angle
-        const slopeAlongForward = this.surfaceNormal.dot(fwd);
-        // Negative sign: going uphill (normal tilts back) → positive pitch → nose up
-        const rawPitch   = Math.atan2(-slopeAlongForward, this.surfaceNormal.y);
-        const maxPitch   = 0.35; // ~20°
-        const targetPitch = Math.max(-maxPitch, Math.min(maxPitch, rawPitch));
-        this.surfacePitch += (targetPitch - this.surfacePitch) * 0.1;
+        let targetPitch = 0;
+        if (hSpeed > 1) {
+            // Positive rawPitch → ascending (vel.y > 0) → nose tilts up
+            const rawPitch = Math.atan2(vel.y, hSpeed);
+            const maxPitch = 0.4; // ~23°
+            targetPitch = Math.max(-maxPitch, Math.min(maxPitch, rawPitch));
+        }
+
+        // Smooth heavily to filter out spring-suspension bounce
+        this.surfacePitch += (targetPitch - this.surfacePitch) * 0.07;
         this.visualPivot.rotation.x = this.surfacePitch;
+        // ─────────────────────────────────────────────────────────────────────
 
         this._updateHop();
     }
