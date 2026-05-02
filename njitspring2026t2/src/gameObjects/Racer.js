@@ -374,25 +374,20 @@ export default class Racer extends ExtendedObject3D
 
     updateVisualTilt()
     {
-        // Drift side-tilt (Y axis)
+        // Drift side-tilt Y axis
         this.visualPivot.rotation.y += (this.driftTiltTarget - this.visualPivot.rotation.y) * this.driftTiltSpeed;
 
-        // ── Slope pitch (X axis) ─────────────────────────────────────────────
-        // Use the kart's actual physics velocity to detect the slope angle.
-        // vel.y / hSpeed = sin(slope_angle), which is always correct regardless
-        // of mesh normals or track geometry. Colliders are never touched.
+        //Slope pitch X axis
         const vel    = this.body.velocity;
         const hSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
 
         let targetPitch = 0;
         if (hSpeed > 1) {
-            // Positive rawPitch → ascending (vel.y > 0) → nose tilts up
             const rawPitch = Math.atan2(vel.y, hSpeed);
-            const maxPitch = 0.8; // ~23°
+            const maxPitch = 0.8; // here goes the logic for the kart tilting but it is not working :( 
             targetPitch = Math.max(-maxPitch, Math.min(maxPitch, rawPitch));
         }
 
-        // Smooth heavily to filter out spring-suspension bounce
         this.surfacePitch += (targetPitch - this.surfacePitch) * 0.07;
         this.visualPivot.rotation.x = this.surfacePitch;
         // ─────────────────────────────────────────────────────────────────────
@@ -440,20 +435,14 @@ export default class Racer extends ExtendedObject3D
     {
         if (!this.drifting) return;
         this.drifting = false;
-
-        // Only grant a new boost when the previous one has fully expired.
-        // Fixes two bugs:
-        //  1. Spamming drift with tier-1+ charge refreshed driftBoostSpeed
-        //     indefinitely, making the boost never run out.
-        //  2. The old `else { driftBoostSpeed = 0 }` branch would cancel an
-        //     active boost if the player tapped drift with too little charge.
+        // boost fix
         if (this.driftBoostSpeed <= 0) {
             if      (this.driftCharge >= this.driftTier3) { this.driftBoostSpeed = this.maxSpeed * 1.4;  this.driftBoostDecay = 0.2;  }
             else if (this.driftCharge >= this.driftTier2) { this.driftBoostSpeed = this.maxSpeed * 0.9;  this.driftBoostDecay = 0.3;  }
             else if (this.driftCharge >= this.driftTier1) { this.driftBoostSpeed = this.maxSpeed * 0.28; this.driftBoostDecay = 0.5;  }
-            // sub-tier1 with no active boost → no boost granted (intentional)
+            // sub-tier1 with no active boost , so no boost granted 
         }
-        // If a boost is still running, let it expire naturally — don't touch it.
+        // If a boost is still running, let it expire naturally 
 
         this.driftCharge = 0;
         this.driftDir = 0;

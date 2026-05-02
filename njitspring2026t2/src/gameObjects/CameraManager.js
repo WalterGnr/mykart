@@ -5,33 +5,26 @@ export default class CameraManager {
         this.heightOffset = 4;
         this.lerpFactor = 1.0; // this fix the camera bug
 
-        // Camera-side pitch suspension: independent slow lerp that absorbs
-        // spring-bounce oscillations before they reach the lookAt / position.
+        // Camera-side pitch suspension:
         this.smoothedPitch = 0;
-        this.pitchLerpSpeed = 0.04; // lower = smoother, higher = more responsive
+        this.pitchLerpSpeed = 0.04; // lower = smoother
     }
 
     updateCamera(playerPosition, playerRotation, surfacePitch = 0) {
-        // Smooth the incoming pitch with a slow lerp — acts as a low-pass filter
-        // so rapid suspension bounces don't shake the camera.
         this.smoothedPitch += (surfacePitch - this.smoothedPitch) * this.pitchLerpSpeed;
         const sinP = Math.sin(this.smoothedPitch); // > 0 uphill, < 0 downhill
 
         const targetX = playerPosition.x - Math.sin(playerRotation) * this.orbitRadius;
         const targetZ = playerPosition.z - Math.cos(playerRotation) * this.orbitRadius;
-        // Slide camera slightly DOWN when climbing so the kart stays framed
-        // and doesn't exit the top of the view.
-        const targetY = playerPosition.y + this.heightOffset - sinP * 2.7;
+        const targetY = playerPosition.y + this.heightOffset - sinP * 2.7; // physical displacement of the camera
 
         this.camera.position.x += (targetX - this.camera.position.x) * this.lerpFactor;
         this.camera.position.y += (targetY - this.camera.position.y) * this.lerpFactor;
         this.camera.position.z += (targetZ - this.camera.position.z) * this.lerpFactor;
 
-        // Aggressive upward rotation: look ahead + high on uphills so the
-        // player sees the road in front. sinP * 9 gives a strong angle tilt.
         const lookX = playerPosition.x + Math.sin(playerRotation) * 3;
         const lookZ = playerPosition.z + Math.cos(playerRotation) * 3;
-        const lookY = playerPosition.y + 1 + sinP * 9;
+        const lookY = playerPosition.y + 1 + sinP * 9;  //value to modify camera rotation while uphill/downhill
         this.camera.lookAt(lookX, lookY, lookZ);
     }
 }
