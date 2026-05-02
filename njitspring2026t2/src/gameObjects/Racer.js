@@ -388,7 +388,7 @@ export default class Racer extends ExtendedObject3D
         if (hSpeed > 1) {
             // Positive rawPitch → ascending (vel.y > 0) → nose tilts up
             const rawPitch = Math.atan2(vel.y, hSpeed);
-            const maxPitch = 0.4; // ~23°
+            const maxPitch = 0.8; // ~23°
             targetPitch = Math.max(-maxPitch, Math.min(maxPitch, rawPitch));
         }
 
