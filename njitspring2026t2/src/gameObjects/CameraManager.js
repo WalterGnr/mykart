@@ -1,13 +1,21 @@
 export default class CameraManager {
     constructor(camera) { //camera settings: If we need camera higher , lower , closer ,etc here is where you modify it.
         this.camera = camera;
-        this.orbitRadius = 10;  
-        this.heightOffset = 4;   
+        this.orbitRadius = 10;
+        this.heightOffset = 4;
         this.lerpFactor = 1.0; // this fix the camera bug
+
+        // Camera-side pitch suspension: independent slow lerp that absorbs
+        // spring-bounce oscillations before they reach the lookAt / position.
+        this.smoothedPitch = 0;
+        this.pitchLerpSpeed = 0.04; // lower = smoother, higher = more responsive
     }
 
     updateCamera(playerPosition, playerRotation, surfacePitch = 0) {
-        const sinP = Math.sin(surfacePitch); // > 0 uphill, < 0 downhill
+        // Smooth the incoming pitch with a slow lerp — acts as a low-pass filter
+        // so rapid suspension bounces don't shake the camera.
+        this.smoothedPitch += (surfacePitch - this.smoothedPitch) * this.pitchLerpSpeed;
+        const sinP = Math.sin(this.smoothedPitch); // > 0 uphill, < 0 downhill
 
         const targetX = playerPosition.x - Math.sin(playerRotation) * this.orbitRadius;
         const targetZ = playerPosition.z - Math.cos(playerRotation) * this.orbitRadius;
