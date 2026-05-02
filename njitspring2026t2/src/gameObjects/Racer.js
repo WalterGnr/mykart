@@ -441,14 +441,23 @@ export default class Racer extends ExtendedObject3D
         if (!this.drifting) return;
         this.drifting = false;
 
-        if      (this.driftCharge >= this.driftTier3) { this.driftBoostSpeed = this.maxSpeed * 1.4;  this.driftBoostDecay = 0.2;  }
-        else if (this.driftCharge >= this.driftTier2) { this.driftBoostSpeed = this.maxSpeed * 0.9;  this.driftBoostDecay = 0.3;  }
-        else if (this.driftCharge >= this.driftTier1) { this.driftBoostSpeed = this.maxSpeed * 0.28; this.driftBoostDecay = 0.5;  }
-        else                                          { this.driftBoostSpeed = 0; }
+        // Only grant a new boost when the previous one has fully expired.
+        // Fixes two bugs:
+        //  1. Spamming drift with tier-1+ charge refreshed driftBoostSpeed
+        //     indefinitely, making the boost never run out.
+        //  2. The old `else { driftBoostSpeed = 0 }` branch would cancel an
+        //     active boost if the player tapped drift with too little charge.
+        if (this.driftBoostSpeed <= 0) {
+            if      (this.driftCharge >= this.driftTier3) { this.driftBoostSpeed = this.maxSpeed * 1.4;  this.driftBoostDecay = 0.2;  }
+            else if (this.driftCharge >= this.driftTier2) { this.driftBoostSpeed = this.maxSpeed * 0.9;  this.driftBoostDecay = 0.3;  }
+            else if (this.driftCharge >= this.driftTier1) { this.driftBoostSpeed = this.maxSpeed * 0.28; this.driftBoostDecay = 0.5;  }
+            // sub-tier1 with no active boost → no boost granted (intentional)
+        }
+        // If a boost is still running, let it expire naturally — don't touch it.
 
         this.driftCharge = 0;
         this.driftDir = 0;
-        this.driftTiltTarget = 0; 
+        this.driftTiltTarget = 0;
     }
 
     applyDriftBoost(direction)

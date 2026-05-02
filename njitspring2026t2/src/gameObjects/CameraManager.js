@@ -21,7 +21,7 @@ export default class CameraManager {
         const targetZ = playerPosition.z - Math.cos(playerRotation) * this.orbitRadius;
         // Slide camera slightly DOWN when climbing so the kart stays framed
         // and doesn't exit the top of the view.
-        const targetY = playerPosition.y + this.heightOffset - sinP * 2;
+        const targetY = playerPosition.y + this.heightOffset - sinP * 2.7;
 
         this.camera.position.x += (targetX - this.camera.position.x) * this.lerpFactor;
         this.camera.position.y += (targetY - this.camera.position.y) * this.lerpFactor;
